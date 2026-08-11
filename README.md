@@ -45,3 +45,6 @@ Use the local URL Vercel prints. Do not run the old `node server.js`; this build
 ## Security
 
 Never place the Gemini key or Redis credentials in `app.js` or `index.html`. They belong only in Vercel Environment Variables.
+
+## Frontend UX recode
+The client now uses `sessionStorage` for per-tab identity. Refreshing the same tab reconnects to the lobby, but opening the site in a normal fresh tab starts at Home. Host round-start actions show an immediate `GENERATING SITUATION...` state while Gemini prepares the prompt, plans preserve drafts only within the same round/tab, and all errors use in-game toasts instead of browser alerts.
