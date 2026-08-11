@@ -1,0 +1,10 @@
+{
+  "name": "out-of-hand-vercel",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@google/genai": "^1.30.0",
+    "@upstash/redis": "^1.35.3"
+  }
+}
