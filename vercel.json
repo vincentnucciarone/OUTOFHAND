@@ -1,15 +1,3 @@
 {
-  "functions": {
-    "api/game.js": {
-      "maxDuration": 60
-    }
-  },
-  "headers": [
-    {
-      "source": "/api/(.*)",
-      "headers": [
-        { "key": "Cache-Control", "value": "no-store" }
-      ]
-    }
-  ]
+  "$schema": "https://openapi.vercel.sh/vercel.json"
 }
