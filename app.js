@@ -17,7 +17,7 @@ $("joinCodeBtn").onclick=async()=>{try{const d=await api({action:"join",code:$("
 $("leaveBtn").onclick=()=>{if(state.poll)clearInterval(state.poll);location.reload()}
 $("startBtn").onclick=async()=>{try{await api({action:"start",code:state.code,playerId:state.me});await refresh()}catch(e){setStatus("lobbyInfo",e.message)}}
 $("replyInput").addEventListener("input",()=>{$("charCount").textContent=`${$("replyInput").value.length} / 500`})
-$("submitReply").onclick=async()=>{const text=$("replyInput").value.trim();if(!text){setStatus("roundStatus","Type a reply first.");return}try{await api({action:"submit",code:state.code,playerId:state.me,text});$("submitReply").disabled=true;setStatus("roundStatus","Submitted. The jury is judging.");$("waitingCard").classList.remove("hidden");await refresh()}catch(e){setStatus("roundStatus",e.message)}}
+$("submitReply").onclick=async()=>{const text=$("replyInput").value.trim();if(!text){setStatus("roundStatus","Type a reply first.");return}try{await api({action:"submit",code:state.code,playerId:state.me,text});$("submitReply").disabled=true;setStatus("roundStatus","Submitted. Waiting for the rest of the lobby...");$("waitingCard").classList.remove("hidden");await refresh()}catch(e){setStatus("roundStatus",e.message)}}
 $("nextRoundBtn").onclick=async()=>{try{await api({action:"next",code:state.code,playerId:state.me});await refresh()}catch(e){setStatus("roundStatus",e.message)}}
 $("returnLobbyBtn").onclick=()=>show("lobby")
 
@@ -40,7 +40,7 @@ function render(d){
   } else if(d.phase==="round"){
     show("round");
     $("roundNumber").textContent=`${d.round} / 7`;
-    $("modifierPill").textContent=d.modifier;
+    $("modifierPill").textContent=d.modifier==="NORMAL"?"NORMAL":"MODIFIER · "+d.modifier;
     $("senderTitle").textContent=d.sender;
     $("dmText").textContent=d.dm;
     $("replyInput").disabled=!!d.mySubmission;
