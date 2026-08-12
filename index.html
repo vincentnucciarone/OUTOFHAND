@@ -1,114 +1,104 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#08090c" />
-  <title>OUT OF HAND</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/styles.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>DM'D</title>
+  <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-  <div class="noise"></div>
   <main id="app">
-    <section id="screen-home" class="screen active">
-      <div class="brandmark">OOH</div>
+    <section id="home" class="screen active">
       <div class="hero">
-        <div class="eyebrow">AI SURVIVAL GAME</div>
-        <h1>OUT OF<br><span>HAND</span></h1>
-        <p class="lede">An impossible situation. One plan. Convince the jury you make it out alive.</p>
+        <div class="eyebrow">AI PARTY GAME</div>
+        <h1>DM'D</h1>
+        <p>Read the DM. Write ONE reply. Let the robot judge you.</p>
       </div>
-      <div class="home-grid">
-        <form id="joinForm" class="panel join-panel">
-          <div class="panel-kicker">JOIN A HOST</div>
-          <label>HOST CODE<input id="joinCode" maxlength="6" autocomplete="off" placeholder="ABC123" /></label>
-          <label>YOUR NAME<input id="joinName" maxlength="24" autocomplete="nickname" placeholder="Player Two" /></label>
-          <button class="primary" type="submit">JOIN GAME <span>↗</span></button>
-        </form>
-        <form id="hostForm" class="panel host-panel">
-          <div class="panel-kicker">CREATE A LOBBY</div>
-          <label>YOUR NAME<input id="hostName" maxlength="24" autocomplete="nickname" placeholder="Host name" /></label>
-          <button class="secondary" type="submit">HOST GAME <span>＋</span></button>
-          <p class="micro">No account. No install. No mercy from the jury.</p>
-        </form>
+      <div class="card">
+        <label>Display name</label>
+        <input id="nameInput" maxlength="24" placeholder="CLANCY">
+        <div class="row">
+          <button id="createBtn" class="primary">Create Lobby</button>
+          <button id="joinBtn">Join Lobby</button>
+        </div>
+        <div id="joinBox" class="hidden">
+          <input id="codeInput" maxlength="8" placeholder="LOBBY CODE">
+          <button id="joinCodeBtn">Join</button>
+        </div>
+        <p id="homeStatus" class="status"></p>
       </div>
-      <div id="homeError" class="toast error hidden"></div>
     </section>
 
-    <section id="screen-lobby" class="screen">
-      <header class="game-header">
-        <div class="mini-logo">OUT OF HAND</div>
-        <div class="code-block"><span>HOST CODE</span><strong id="lobbyCode">------</strong><button id="copyCode" class="icon-btn">COPY</button></div>
+    <section id="lobby" class="screen">
+      <header class="topbar">
+        <div><span class="muted">LOBBY</span><strong id="lobbyCode"></strong></div>
+        <button id="leaveBtn" class="ghost">Leave</button>
       </header>
-      <div class="lobby-layout">
-        <div>
-          <div class="eyebrow">LIVE LOBBY</div>
-          <h2>Waiting for<br>the host.</h2>
-          <p id="lobbyHint" class="muted">Everyone receives the same scenario at the same time. The host starts each round.</p>
-          <div id="aiMode" class="status-pill"></div>
+      <div class="grid2">
+        <div class="card">
+          <div class="sectionTitle">Players</div>
+          <div id="playerList"></div>
         </div>
-        <div class="panel roster-panel">
-          <div class="panel-top"><span>PLAYERS</span><strong id="playerCount">0</strong></div>
-          <div id="roster" class="roster"></div>
+        <div class="card">
+          <div class="sectionTitle">Game</div>
+          <p id="lobbyInfo">Waiting for the host...</p>
+          <button id="startBtn" class="primary full">Start Game</button>
+          <p class="hint">7 rounds. The AI creates the DM, judges every reply, and reveals raw scores only.</p>
         </div>
       </div>
-      <div class="host-controls">
-        <button id="startGame" class="primary hidden">START ROUND <span>→</span></button>
-        <div id="waitingHost" class="waiting-copy">WAITING FOR HOST…</div>
-      </div>
     </section>
 
-    <section id="screen-scenario" class="screen scenario-screen">
-      <header class="game-header sticky">
-        <div class="mini-logo">OUT OF HAND</div>
-        <div class="round-chip" id="scenarioRound">ROUND 1</div>
-        <div id="submittedCounter" class="submitted-counter">0 / 0 READY</div>
-        <div id="timer" class="timer">03:00</div>
+    <section id="round" class="screen">
+      <header class="topbar">
+        <div><span class="muted">ROUND</span><strong id="roundNumber">1 / 7</strong></div>
+        <div class="pill" id="modifierPill">NORMAL</div>
       </header>
-      <div class="scenario-layout">
-        <article class="scenario-card">
-          <div class="eyebrow">YOUR SITUATION</div>
-          <h2 id="scenarioTitle">THE INCIDENT</h2>
-          <p id="scenarioPrompt" class="scenario-prompt"></p>
-          <div id="scenarioFacts" class="fact-list"></div>
-          <div id="roundModifier" class="round-modifier"><span>ROUND MODIFIER</span><strong>STANDARD RULES</strong><p>Survive the scenario using the information provided.</p></div><div class="objective"><span>OBJECTIVE</span><p id="scenarioObjective"></p></div>
-        </article>
-        <section class="plan-card">
-          <div class="plan-head"><div><div class="eyebrow">YOUR CASE</div><h3>Convince the jury.</h3></div><span id="charCount">0 / 5000</span></div>
-          <textarea id="planInput" maxlength="5000" placeholder="Explain exactly what you would do, in order. Account for the dangers, time, and resources in the scenario…"></textarea>
-          <button id="submitPlan" class="primary">LOCK PLAN <span>✓</span></button>
-          <p id="submitStatus" class="micro">Your answer cannot be edited after submission.</p>
-        </section>
+      <div class="card dmCard">
+        <div class="sender" id="senderTitle">YOUR FRIEND</div>
+        <div class="dm" id="dmText">Loading...</div>
+      </div>
+      <div class="card">
+        <div class="sectionTitle">Your one reply</div>
+        <textarea id="replyInput" maxlength="500" placeholder="Type exactly one message..."></textarea>
+        <div class="replyFooter">
+          <span id="charCount">0 / 500</span>
+          <button id="submitReply" class="primary">Submit Reply</button>
+        </div>
+        <p id="roundStatus" class="status"></p>
+      </div>
+      <div class="card waiting hidden" id="waitingCard">
+        <strong>Waiting for everyone...</strong>
+        <div id="submittedList"></div>
       </div>
     </section>
 
-    <section id="screen-judging" class="screen centered">
-      <div class="jury-dots"><span></span><span></span><span></span><span></span><span></span></div>
-      <div class="eyebrow" id="judgingRound">ROUND 1</div>
-      <h2>The jury is<br>deliberating.</h2>
-      <p id="judgeStage" class="muted">Five exhausted jurors are reading every plan. Line by line.</p>
-      <div class="progress"><div id="judgeProgressBar"></div></div>
-      <div id="judgeProgressText" class="micro">0 / 0 CASES REVIEWED</div>
+    <section id="results" class="screen">
+      <header class="topbar">
+        <div><span class="muted">RESULTS</span><strong id="resultsRound">ROUND</strong></div>
+      </header>
+      <div class="card">
+        <div id="scoreList" class="scores"></div>
+      </div>
+      <div class="card">
+        <button id="nextRoundBtn" class="primary full">Continue</button>
+      </div>
     </section>
 
-    <section id="screen-results" class="screen">
-      <header class="game-header"><div class="mini-logo">OUT OF HAND</div><div class="round-chip" id="resultsRound">ROUND 1 RESULTS</div></header>
-      <div class="results-head"><div><div class="eyebrow">THE VERDICTS</div><h2>Who made it out?</h2></div><div id="myVerdict" class="my-verdict"></div></div>
-      <section id="juryReadout" class="jury-readout"><div class="eyebrow">AI JURY READOUT</div><div id="juryReadoutTitle" class="jury-readout-title">THE JURY IS READING…</div><div id="juryReadoutPlan" class="jury-readout-plan"></div><div id="juryReadoutLines" class="jury-readout-lines"></div><div id="juryReadoutVerdict" class="jury-readout-verdict hidden"></div></section><section class="round-summary">
-        <div class="summary-block"><div class="eyebrow">ROUND PODIUM</div><div id="podium" class="podium"></div></div>
-        <div class="summary-block"><div class="eyebrow">OVERALL SCORES</div><div id="overallScores" class="overall-scores"></div></div>
-      </section>
-      <section id="gameAwards" class="game-awards hidden"><div class="eyebrow">END OF GAME AWARDS</div><h3>THE JURY HAS SPOKEN.</h3><div id="gameAwardsList" class="awards-grid"></div></section><div id="verdictList" class="verdict-list"></div>
-      <div class="results-actions">
-        <button id="nextRound" class="primary hidden">NEXT ROUND <span>→</span></button>
-        <div id="resultsWaiting" class="waiting-copy">WAITING FOR HOST…</div>
+    <section id="final" class="screen">
+      <div class="hero">
+        <div class="eyebrow">GAME OVER</div>
+        <h1>FINAL RESULTS</h1>
       </div>
+      <div class="card">
+        <div id="finalScores" class="scores"></div>
+      </div>
+      <div class="card">
+        <div class="sectionTitle">Awards</div>
+        <div id="awards"></div>
+      </div>
+      <button id="returnLobbyBtn" class="ghost full">Back to Lobby</button>
     </section>
   </main>
-
-  <div id="modal" class="modal hidden"><div class="modal-card"><button id="modalClose" class="modal-close">×</button><div id="modalBody"></div></div></div>
-  <script type="module" src="/app.js"></script>
+  <script src="/app.js"></script>
 </body>
 </html>
