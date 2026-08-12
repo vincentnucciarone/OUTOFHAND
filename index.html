@@ -46,7 +46,7 @@
         <div>
           <div class="eyebrow">LIVE LOBBY</div>
           <h2>Waiting for<br>the host.</h2>
-          <p class="muted">Everyone receives the same scenario at the same time. Submit a plan before the clock expires.</p>
+          <p id="lobbyHint" class="muted">Everyone receives the same scenario at the same time. The host starts each round.</p>
           <div id="aiMode" class="status-pill"></div>
         </div>
         <div class="panel roster-panel">
@@ -73,7 +73,7 @@
           <h2 id="scenarioTitle">THE INCIDENT</h2>
           <p id="scenarioPrompt" class="scenario-prompt"></p>
           <div id="scenarioFacts" class="fact-list"></div>
-          <div class="objective"><span>OBJECTIVE</span><p id="scenarioObjective"></p></div>
+          <div id="roundModifier" class="round-modifier"><span>ROUND MODIFIER</span><strong>STANDARD RULES</strong><p>Survive the scenario using the information provided.</p></div><div class="objective"><span>OBJECTIVE</span><p id="scenarioObjective"></p></div>
         </article>
         <section class="plan-card">
           <div class="plan-head"><div><div class="eyebrow">YOUR CASE</div><h3>Convince the jury.</h3></div><span id="charCount">0 / 5000</span></div>
@@ -88,7 +88,7 @@
       <div class="jury-dots"><span></span><span></span><span></span><span></span><span></span></div>
       <div class="eyebrow" id="judgingRound">ROUND 1</div>
       <h2>The jury is<br>deliberating.</h2>
-      <p class="muted">Every plan is being checked against the same scenario constraints.</p>
+      <p id="judgeStage" class="muted">Five exhausted jurors are reading every plan. Line by line.</p>
       <div class="progress"><div id="judgeProgressBar"></div></div>
       <div id="judgeProgressText" class="micro">0 / 0 CASES REVIEWED</div>
     </section>
@@ -96,11 +96,11 @@
     <section id="screen-results" class="screen">
       <header class="game-header"><div class="mini-logo">OUT OF HAND</div><div class="round-chip" id="resultsRound">ROUND 1 RESULTS</div></header>
       <div class="results-head"><div><div class="eyebrow">THE VERDICTS</div><h2>Who made it out?</h2></div><div id="myVerdict" class="my-verdict"></div></div>
-      <section class="round-summary">
+      <section id="juryReadout" class="jury-readout"><div class="eyebrow">AI JURY READOUT</div><div id="juryReadoutTitle" class="jury-readout-title">THE JURY IS READING…</div><div id="juryReadoutPlan" class="jury-readout-plan"></div><div id="juryReadoutLines" class="jury-readout-lines"></div><div id="juryReadoutVerdict" class="jury-readout-verdict hidden"></div></section><section class="round-summary">
         <div class="summary-block"><div class="eyebrow">ROUND PODIUM</div><div id="podium" class="podium"></div></div>
         <div class="summary-block"><div class="eyebrow">OVERALL SCORES</div><div id="overallScores" class="overall-scores"></div></div>
       </section>
-      <div id="verdictList" class="verdict-list"></div>
+      <section id="gameAwards" class="game-awards hidden"><div class="eyebrow">END OF GAME AWARDS</div><h3>THE JURY HAS SPOKEN.</h3><div id="gameAwardsList" class="awards-grid"></div></section><div id="verdictList" class="verdict-list"></div>
       <div class="results-actions">
         <button id="nextRound" class="primary hidden">NEXT ROUND <span>→</span></button>
         <div id="resultsWaiting" class="waiting-copy">WAITING FOR HOST…</div>
