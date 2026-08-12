@@ -1,4 +1,5 @@
 import { Redis } from "@upstash/redis";
+import { GoogleGenAI } from "@google/genai";
 
 const redis = Redis.fromEnv();
 const TTL = 60 * 60 * 6;
@@ -25,19 +26,33 @@ async function load(code){return await redis.get(key(code))}
 async function save(code,g){await redis.set(key(code),g,{ex:TTL})}
 function json(res,status,obj){res.status(status).json(obj)}
 
-async function gemini(prompt){
+async function gemini(prompt, schema, temperature=0.9){
   const apiKey=process.env.GEMINI_API_KEY;
   if(!apiKey) throw new Error("GEMINI_API_KEY is not configured.");
-  const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
-  const r=await fetch(url,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({
-    contents:[{parts:[{text:prompt}]}],
-    generationConfig:{temperature:0.9,responseMimeType:"application/json"}
-  })});
-  const data=await r.json();
-  if(!r.ok) throw new Error(data?.error?.message||"AI request failed.");
-  const text=data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+  const ai=new GoogleGenAI({apiKey});
+  const interaction=await ai.interactions.create({
+    model:"gemini-3.6-flash",
+    input:prompt,
+    store:false,
+    generation_config:{
+      temperature
+    },
+    response_format:[{
+      type:"text",
+      mime_type:"application/json",
+      schema
+    }]
+  });
+
+  const text=interaction.output_text;
   if(!text) throw new Error("AI returned no content.");
-  return JSON.parse(text.replace(/^```json\s*/,"").replace(/\s*```$/,""));
+
+  try{
+    return JSON.parse(text);
+  }catch{
+    throw new Error("AI returned invalid JSON.");
+  }
 }
 
 async function generateRound(round){
@@ -54,7 +69,16 @@ Rules:
 - Do not explain the scenario.
 - Modifier rule: ${mod.rule}
 - Round ${round} of ${ROUNDS}; make later rounds slightly more awkward or difficult.`;
-  const x=await gemini(prompt);
+  const x=await gemini(prompt,{
+    type:"object",
+    properties:{
+      sender:{type:"string",description:"Generic sender title, never a real person's name."},
+      dm:{type:"string",description:"The exact natural text message the player receives."},
+      modifier:{type:"string",description:"The selected modifier name."}
+    },
+    required:["sender","dm","modifier"],
+    additionalProperties:false
+  },0.9);
   return {sender:String(x.sender||"YOUR FRIEND").slice(0,40),dm:String(x.dm||"hey, can you help me with something?").slice(0,600),modifier:mod.name};
 }
 
@@ -75,7 +99,25 @@ IMPORTANT: Return JSON only in this exact shape:
 Do not return commentary, explanations, names, rankings, or extra fields.
 Players:
 ${entries.map(e=>`ID=${e.id}\nREPLY=${e.reply}`).join("\n\n")}`;
-  const x=await gemini(prompt);
+  const x=await gemini(prompt,{
+    type:"object",
+    properties:{
+      scores:{
+        type:"array",
+        items:{
+          type:"object",
+          properties:{
+            id:{type:"string"},
+            score:{type:"integer",minimum:0,maximum:cap}
+          },
+          required:["id","score"],
+          additionalProperties:false
+        }
+      }
+    },
+    required:["scores"],
+    additionalProperties:false
+  },0.3);
   const byId=new Map((x.scores||[]).map(s=>[String(s.id),Math.max(0,Math.min(cap,Math.round(Number(s.score)||0)))]));
   for(const p of g.players){p.roundScore=byId.get(p.id)||0;p.total=(p.total||0)+p.roundScore}
   g.phase="results";
@@ -88,7 +130,26 @@ Use only these players:
 ${g.players.map(p=>p.name).join(", ")}
 Awards should be harmless and funny. Do not duplicate players if avoidable.`;
   try{
-    const x=await gemini(prompt);
+    const x=await gemini(prompt,{
+      type:"object",
+      properties:{
+        awards:{
+          type:"array",
+          maxItems:4,
+          items:{
+            type:"object",
+            properties:{
+              title:{type:"string"},
+              player:{type:"string"}
+            },
+            required:["title","player"],
+            additionalProperties:false
+          }
+        }
+      },
+      required:["awards"],
+      additionalProperties:false
+    },0.8);
     return Array.isArray(x.awards)?x.awards.slice(0,4):[];
   }catch{return []}
 }

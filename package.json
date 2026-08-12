@@ -1,7 +1,10 @@
 {
-  "name":"dmd",
-  "version":"1.0.0",
-  "private":true,
-  "type":"module",
-  "dependencies":{"@upstash/redis":"^1.35.0"}
+  "name": "dmd",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@upstash/redis": "^1.35.0",
+    "@google/genai": "^1.0.0"
+  }
 }

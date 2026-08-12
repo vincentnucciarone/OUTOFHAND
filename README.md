@@ -30,3 +30,8 @@ Vercel deploys from the repository.
 - Round 6: 125 max
 - Round 7: 150 max
 - Host can kick players from the lobby
+
+
+## Gemini
+
+The server uses the Google GenAI JavaScript SDK and Gemini 3.6 Flash through the Interactions API with structured JSON output. This avoids the retired `gemini-2.5-flash` model endpoint.
