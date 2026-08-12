@@ -29,6 +29,7 @@ const state = {
   readoutKey: '',
   revealedJurors: {},
   revealedCards: new Set(),
+  openVerdictId: '',
 };
 
 function escapeHtml(value = '') {
@@ -147,6 +148,7 @@ async function poll() {
   } catch (error) {
     state.connected = false; setConnectionStatus(navigator.onLine ? 'reconnecting' : 'offline');
     if (/Lobby not found/i.test(error.message)) { toast('That lobby no longer exists. Returning home.'); clearSession(); }
+    else if (/You were kicked/i.test(error.message)) { clearSession(); toast('You were kicked from the lobby by the host.', 'error', 5000); }
   } finally { state.pollInFlight = false; }
 }
 
@@ -172,6 +174,20 @@ function setButtonBusy(button, busy, busyLabel, normalHtml) {
   button.innerHTML = busy ? `<span class="button-spinner"></span>${escapeHtml(busyLabel)}` : normalHtml;
 }
 
+async function kickPlayer(playerId) {
+  if (!state.lobby || !amHost() || state.action || state.lobby.state !== 'lobby') return;
+  const player = state.lobby.players.find((p) => p.id === playerId);
+  if (!player || player.isHost) return;
+  if (!window.confirm(`Kick ${player.name} from the lobby?`)) return;
+  state.action = `kick:${playerId}`;
+  renderLobby();
+  try {
+    adopt(await post('kick', { code: state.lobby.code, token: state.token, playerId }));
+    toast(`${player.name} was kicked from the lobby.`, 'success', 2200);
+  } catch (error) { toast(error.message); }
+  finally { state.action = null; renderState(); }
+}
+
 async function startRound() {
   if (!state.lobby || !amHost() || state.action) return;
   state.action = 'start'; renderLobby();
@@ -183,7 +199,7 @@ async function startRound() {
 async function submitPlan() {
   if (!state.lobby || state.action || me()?.active === false || me()?.submitted) return;
   const input = $('planInput'); const plan = input.value.trim();
-  if (plan.length < 20) { toast('Give the jury a little more than that.'); input.focus(); return; }
+  if (plan.length < 3) { toast('Give the jury an actual answer.'); input.focus(); return; }
   state.action = 'submit'; renderScenario();
   try {
     sessionStorage.removeItem(draftKey());
@@ -212,13 +228,19 @@ function renderLobby() {
   $('aiMode').textContent = lobby.aiEnabled ? '● GEMINI JURY ONLINE' : '○ DEMO JURY — ADD GEMINI_API_KEY';
   $('roster').innerHTML = lobby.players.map((player) => {
     const status = player.active === false ? 'ELIMINATED' : loading ? 'LOADING' : 'READY';
+    const kick = amHost() && !player.isHost && lobby.state === 'lobby'
+      ? `<button class="kick-player" type="button" data-kick-id="${escapeHtml(player.id)}">KICK</button>` : '';
     return `<div class="player-row ${player.connected ? '' : 'offline'} ${player.active === false ? 'eliminated' : ''}">
       <span class="dot"></span><span class="name">${escapeHtml(player.name)}</span>
       ${player.isHost ? '<span class="host-tag">HOST</span>' : ''}
       <span class="player-state">${status}</span>
       <span class="stats">${player.score || 0} PTS · ${player.survived || 0} SURVIVED</span>
+      ${kick}
     </div>`;
   }).join('');
+  document.querySelectorAll('[data-kick-id]').forEach((button) => {
+    button.addEventListener('click', () => kickPlayer(button.dataset.kickId));
+  });
 
   const start = $('startGame'); const waiting = $('waitingHost');
   start.classList.toggle('hidden', !amHost()); waiting.classList.toggle('hidden', amHost());
@@ -317,6 +339,11 @@ function animateVerdict(card, verdict) {
   step();
 }
 
+function readoutDuration(text, base = 3000) {
+  const length = String(text || '').trim().length;
+  return Math.min(9000, Math.max(base, Math.round((length / 14) * 1000) + 700));
+}
+
 function playJuryReadout(lobby) {
   const verdicts = lobby.verdicts || [];
   if (!verdicts.length || !$('juryReadout')) return;
@@ -351,7 +378,7 @@ function playJuryReadout(lobby) {
         line.textContent = `READING: ${planLines[lineIndex]}`;
         linesEl.appendChild(line);
         lineIndex += 1;
-        state.readoutTimer = setTimeout(showLine, 550);
+        state.readoutTimer = setTimeout(showLine, readoutDuration(planLines[lineIndex - 1]));
         return;
       }
       const jurors = verdict.jurors || [];
@@ -364,12 +391,12 @@ function playJuryReadout(lobby) {
           line.innerHTML = `<strong>${escapeHtml(j.name || 'JUROR')}:</strong> ${escapeHtml(j.note || '')}`;
           linesEl.appendChild(line);
           jurorIndex += 1;
-          state.readoutTimer = setTimeout(showJuror, 850);
+          state.readoutTimer = setTimeout(showJuror, readoutDuration(j.note));
           return;
         }
         finalEl.textContent = `${verdict.verdict} · JURY ${verdict.vote || ''}`;
         finalEl.classList.remove('hidden');
-        state.readoutTimer = setTimeout(() => { verdictIndex += 1; step(); }, 1400);
+        state.readoutTimer = setTimeout(() => { verdictIndex += 1; step(); }, 1800);
       };
       showJuror();
     };
@@ -392,12 +419,21 @@ function renderResults() {
   $('verdictList').innerHTML = (lobby.verdicts || []).map((verdict) => {
     const accepted = verdict.verdict === 'ACCEPTED';
     const jurors = (verdict.jurors || []).map((j) => `<div class="juror"><div class="juror-name">${escapeHtml(j.name || 'JUROR')}</div><div class="juror-vote ${String(j.vote).includes('ACCEPT') ? 'accept' : 'reject'}">${escapeHtml(j.vote || '')}</div><div class="juror-note">${escapeHtml(j.note || '')}</div></div>`).join('');
-    return `<div class="verdict-card ${accepted ? 'accept' : 'reject'}">
+    return `<div class="verdict-card ${accepted ? 'accept' : 'reject'}" data-verdict-id="${escapeHtml(verdict.playerId)}">
       <button class="verdict-summary" type="button"><div class="verdict-name">${escapeHtml(verdict.playerName)}</div><div class="verdict-vote">JURY ${escapeHtml(verdict.vote || '')}</div><div class="verdict-state">${escapeHtml(verdict.verdict)}</div><div class="verdict-toggle">＋</div></button>
       <div class="verdict-detail"><div class="chair-summary"><strong>CHAIR:</strong> ${escapeHtml(verdict.summary || '')}</div><div class="juror-grid">${jurors}</div><div class="eyebrow">SUBMITTED PLAN</div><div class="detail-plan">${escapeHtml(verdict.plan || '')}</div></div>
     </div>`;
   }).join('') || '<div class="empty-copy">No verdicts this round.</div>';
-  document.querySelectorAll('.verdict-card').forEach((card) => card.querySelector('.verdict-summary')?.addEventListener('click', () => { card.classList.toggle('open'); card.querySelector('.verdict-toggle').textContent = card.classList.contains('open') ? '−' : '＋'; }));
+  document.querySelectorAll('.verdict-card').forEach((card) => card.querySelector('.verdict-summary')?.addEventListener('click', () => {
+    card.classList.toggle('open');
+    card.querySelector('.verdict-toggle').textContent = card.classList.contains('open') ? '−' : '＋';
+    state.openVerdictId = card.classList.contains('open') ? card.dataset.verdictId : '';
+  }));
+  if (state.openVerdictId) {
+    const openCard = document.querySelector(`.verdict-card[data-verdict-id="${CSS.escape(state.openVerdictId)}"]`);
+    if (openCard) { openCard.classList.add('open'); openCard.querySelector('.verdict-toggle').textContent = '−'; }
+    else state.openVerdictId = '';
+  }
   playJuryReadout(lobby);
 
   const ranked = [...(lobby.verdicts || [])].sort((a,b) => (b.roundScore||0)-(a.roundScore||0) || String(a.playerName).localeCompare(String(b.playerName)));
