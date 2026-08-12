@@ -35,3 +35,8 @@ Vercel deploys from the repository.
 ## Gemini
 
 The server uses the Google GenAI JavaScript SDK and Gemini 3.6 Flash through the Interactions API with structured JSON output. This avoids the retired `gemini-2.5-flash` model endpoint.
+
+
+## SDK requirement
+
+The project requires `@google/genai` version 2.0.0 or newer because the current Interactions API no longer accepts the legacy SDK schema.

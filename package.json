@@ -5,6 +5,6 @@
   "type": "module",
   "dependencies": {
     "@upstash/redis": "^1.35.0",
-    "@google/genai": "^1.0.0"
+    "@google/genai": ">=2.0.0"
   }
 }
